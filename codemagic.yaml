@@ -1,0 +1,71 @@
+workflows:
+  unity-ios-workflow:
+    name: iOS Workflow
+    max_build_duration: 120
+    integrations:
+      app_store_connect: "acc5"
+    environment:
+      xcode: 16.1
+      groups:
+        - 1DEFAULT
+      vars:
+        XCODE_PROJECT: "MostMiner.xcodeproj" #<----------------SET HERE
+        XCODE_SCHEME: "MostMiner" #<----------------SET HERE
+        CERTIFICATE_PRIVATE_KEY: |
+            -----BEGIN RSA PRIVATE KEY-----
+            MIIEpAIBAAKCAQEA1cRWrRuHr+kxts7pnoXBgtZIMEMfmn1wab9dB6e4TDIBAmp5
+            BRFyG97V6/XD7jZ98ld3R9BkA3ZVfrakXLwlI8yFrQ3MvVA1j5z5Gn83cKgxppsF
+            nXuAk034UrKiR8GNzQRzEVhAl3MmynqVEhujwFDAvX4MtuYuywfwfJBIdjisDdbE
+            hFjmc743FvJtNZvSzrUrj/FXcbk8tw7OZFGMHXm1gvgyKtHcNRy1UC3yaJd4EL6y
+            2Neeo4J6hMaBGQd5g82ZgtzMLmbJwNT96a0u1cS7aWEQU1RxHdIChPP+zRYUeyH2
+            7EaPsEPbTrR44wf5mWFEiEyaDtBTuVvrr8VXTQIDAQABAoIBAA6VxFIwUCw07XLr
+            IC50MtVR+H/ufIAGcf6NE3RbwavVN5NqH1K0s4PqSs88J/+fUS2RQS6xrbk8wC2S
+            mZlILwKHyFEb4W3DRLxFOgvQRUCXATg8WIA7tnSWe8xsqrzZnGqyFIXI7zNGJI3p
+            GjWvlBchi10CdiyefO/WXVaqY39JU6RvNrbI1sdl2Dwo1AoNFuEFIWfMDxhc1Ery
+            VucRj0QRDnH2co2dI7EWir8HIgKwasMvLP2yUQmzWE1IGjNxiVOi3WSZ5XZGw/7V
+            5HkqZFRWzyLPcZ4S/m2AKrS9wGvxK/eEja+HJ83VSs1n84frwTgNRAlVt8neQpX9
+            vCb2AcMCgYEA9BWGemwENGvOLcex26ImmzOxzs76JssPGu4b0SMCDaEJzBgh1fvr
+            8d4GAUNPK/HmDXnw5xuarRGVFH97sUyZv4fBV6y5UaMUjpRT01syw2jyMXaPnjT3
+            QjN03u462lEOEuwh+UJUT7dTl+DNiDtAAEY3RtKiQRMAaSsVtBG+WmcCgYEA4DPr
+            sKlCiwd4+WwLzM8/64po35sugErWaDeUgRxMsr/cZxVPTY1LdkdGHfYl9xvldfKc
+            NL7ozJWnx9Pcbo3leyt4QqsnoDSvywqA62ekCq973I45BJEeQ4a9pzcWSAbNs17v
+            qZ0wNKMkRMNr2lz+jiHtupOWEtEoM12Bm4KJmCsCgYEA3YSjlXtunXyxlA7GNgSF
+            cRmLZ5ukn4xuWwx6JmXVOTVLxPSp0KBf1BSh8od51PImzVg78CK3UBbC6+V/Brv0
+            VUUJjV5umc6dm4C2Sv1bpskZ9RYa5YRAWs6EZMZklzo0wauYcbVm+ynwLciR/+91
+            +EnBZP9IzjJGjyvQ+KmZzkUCgYEAz7hrAmcfRs4qj/RBzoSptSGsXpdY8vXjRfVQ
+            unosuWO24S7GJZTmOHR6iyHWNOb8plWb0eaaq4lwRFyOm0MOPRqeNi567RxDTvux
+            S+je/CNvv31paEjHYErDBdys4Rikli48H8qJsgsAfFEOaObF1YurxLQeU9rCwyw7
+            +4dq0bcCgYApT1dZZyXJdGsLDdKuNt28QmjmEOKlM0FJeHSvOJTpVw3q38P/Ypc4
+            DY2qk+e4Iz/m2MsZ31MjbntWK2u41qsWFzQj5OcP0KgDUtGu/7QdjqUnNpS8DAbG
+            wDiIHkfzIhS2vqO4UKcBtalcrLHIqLFTLePA41lR1WBFJnaxKJxiNw==
+-----END RSA PRIVATE KEY-----
+        
+    scripts:
+      - name: Delete derived data
+        script: rm -rf ~/Library/Developer/Xcode/DerivedData
+      - name: Set up keychain to be used for code signing using Codemagic CLI 'keychain' command
+        script: keychain initialize
+      - name: Fetch signing files for main target
+        script: |
+          app-store-connect fetch-signing-files "com.radonicMiodrag.MostMiner" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Set up signing certificate
+        script: keychain add-certificates
+      - name: Set up code signing settings on Xcode project
+        script: xcode-project use-profiles
+      - name: Set build number manually
+        script: agvtool new-version -all 1
+      - name: Build ipa for distribution
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME" \
+            --archive-xcargs "CODE_SIGN_STYLE=Auto"
+      - name: Publish to App Store Connect
+        script: |
+          app-store-connect publish --path "/Users/builder/clone/build/ios/ipa/MostMiner.ipa"
+    
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
