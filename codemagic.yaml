@@ -38,7 +38,7 @@ workflows:
             +4dq0bcCgYApT1dZZyXJdGsLDdKuNt28QmjmEOKlM0FJeHSvOJTpVw3q38P/Ypc4
             DY2qk+e4Iz/m2MsZ31MjbntWK2u41qsWFzQj5OcP0KgDUtGu/7QdjqUnNpS8DAbG
             wDiIHkfzIhS2vqO4UKcBtalcrLHIqLFTLePA41lR1WBFJnaxKJxiNw==
------END RSA PRIVATE KEY-----
+            -----END RSA PRIVATE KEY-----
         
     scripts:
       - name: Delete derived data
