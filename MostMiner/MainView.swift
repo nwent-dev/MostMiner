@@ -1,21 +1,25 @@
 import SwiftUI
+import AVFoundation
 
 enum AppScreenState {
     case menu
     case game
-    case color
     case privacy
 }
 
 struct MainView: View {
     @State private var screenState: AppScreenState = .menu
     @State private var isVolumeMuted = true
+    @State private var backgroundAudioPlayer: AVAudioPlayer?
     @StateObject private var orientationManager = OrientationManager()
 
     var body: some View {
         ZStack {
             Image(orientationManager.isLandscape ? "backgroundLandsacpe" : "background")
                 .ignoresSafeArea()
+                .onAppear {
+                    setupAudioPlayer()
+                }
 
             switch screenState {
                 case .menu:
@@ -29,12 +33,9 @@ struct MainView: View {
                     WebViewForGame(isSoundMuted: $isVolumeMuted, currentScreen: $screenState)
                         .ignoresSafeArea()
 
-                case .color:
-                    Text("Color")
-
                 case .privacy:
                     ZStack {
-                        WebView(urlString: "https://google.com/")
+                        WebView(urlString: "https://mostminer.space/privacy")
 
                         Button {
                             screenState = .menu
@@ -67,18 +68,18 @@ struct MainView: View {
         Group {
             Button {
                 screenState = .game
+                stopBackgroundMusic()
             } label: {
                 Image("startBtn")
             }
 
             Button {
-                screenState = .color
-            } label: {
-                Image("colorBtn")
-            }
-
-            Button {
                 isVolumeMuted.toggle()
+                if !isVolumeMuted {
+                    playBackgroundMusic()
+                } else {
+                    stopBackgroundMusic()
+                }
             } label: {
                 Image(isVolumeMuted ? "volumeOff" : "volumeOn")
             }
@@ -90,6 +91,28 @@ struct MainView: View {
                 Image("privacyBtn")
             }
         }
+    }
+    
+    private func setupAudioPlayer() {
+        if let path = Bundle.main.path(forResource: "backgroundMusic", ofType: "mp3") {
+            let url = URL(fileURLWithPath: path)
+            do {
+                backgroundAudioPlayer = try AVAudioPlayer(contentsOf: url)
+                backgroundAudioPlayer?.numberOfLoops = -1
+                backgroundAudioPlayer?.prepareToPlay()
+            } catch {
+                print("Audio Player Error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func playBackgroundMusic() {
+        backgroundAudioPlayer?.play()
+    }
+
+    private func stopBackgroundMusic() {
+        backgroundAudioPlayer?.stop()
+        backgroundAudioPlayer?.currentTime = 0
     }
 }
 
